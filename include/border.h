@@ -31,4 +31,6 @@ struct border_s
 
 int border_init(border *b, const char *filename);
 
-void border_blit(border *b, SDL_Surface *s, SDL_Rect *r, border_edge edges);
+void border_kill(border *b);
+
+void border_draw(border *b, SDL_Surface *s, SDL_Rect *r, border_edge edges);

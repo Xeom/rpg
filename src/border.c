@@ -15,7 +15,7 @@ int border_init(border *b, const char *filename)
 
     printf("[i] Loading borders from %s ...\n", filename);
 
-    b->filename = malloc(1 + strlen(filename));
+    b->filename = malloc(strlen(filename) + 1);
     strcpy(b->filename, filename);
 
     loaded = border_load_texture(b);
@@ -68,6 +68,23 @@ int border_init(border *b, const char *filename)
     return 0;
 }
 
+void border_kill(border *b)
+{
+    SDL_FreeSurface(b->tl_corner);
+    SDL_FreeSurface(b->tr_corner);
+    SDL_FreeSurface(b->bl_corner);
+    SDL_FreeSurface(b->br_corner);
+
+    SDL_FreeSurface(b->t_edge);
+    SDL_FreeSurface(b->b_edge);
+    SDL_FreeSurface(b->l_edge);
+    SDL_FreeSurface(b->r_edge);
+
+    SDL_FreeSurface(b->centre);
+
+    free(b->filename);
+}
+
 static SDL_Surface *border_load_texture(border *b)
 {
     SDL_Surface *rtn;
@@ -106,7 +123,7 @@ static SDL_Surface *border_load_texture(border *b)
     return rtn;
 }
 
-void border_blit(border *b, SDL_Surface *s, SDL_Rect *r, border_edge edges)
+void border_draw(border *b, SDL_Surface *s, SDL_Rect *r, border_edge edges)
 {
     SDL_Rect srcrect, dstrect;
     SDL_Surface *toblit;
