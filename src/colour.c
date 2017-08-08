@@ -1,7 +1,18 @@
-#include <stdio.h>
+#include <SDL2/SDL.h>
 #include <math.h>
 
-#include "../include/colour.h"
+#include "colour.h"
+
+SDL_Color colour_to_sdl(col_rgb rgb)
+{
+    SDL_Color rtn;
+
+    rtn.r = rgb.r;
+    rtn.g = rgb.g;
+    rtn.b = rgb.b;
+
+    return rtn;
+}
 
 col_hsl colour_to_hsl(col_rgb rgb)
 {
