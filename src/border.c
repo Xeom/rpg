@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <SDL2/SDL.h>
 
+#include "textbox.h"
+
 #include "border.h"
 
 static SDL_Surface *border_load_texture(border *b);
@@ -43,7 +45,7 @@ int border_init(border *b, const char *filename)
             srcrect.x = xind * tilew;
             srcrect.y = yind * tileh;
 
-            s = SDL_CreateRGBSurface(0, tilew, tileh, 32, 0, 0, 0, 0);
+            s = surface_default(tilew, tileh);
 
             SDL_BlitSurface(loaded, &srcrect, s, &dstrect);
 
@@ -107,7 +109,7 @@ static SDL_Surface *border_load_texture(border *b)
 
     if (!rtn)
     {
-        rtn = SDL_CreateRGBSurface(0, 3, 3, 32, 0, 0, 0, 0);
+        rtn = surface_default(3, 3);
 
         if (!rtn)
             fprintf(
@@ -123,7 +125,7 @@ static SDL_Surface *border_load_texture(border *b)
     return rtn;
 }
 
-void border_draw(border *b, SDL_Surface *s, SDL_Rect *r, border_edge edges)
+void border_draw(border *b, SDL_Surface *s, SDL_Rect *r, textbox_attrs edges)
 {
     SDL_Rect srcrect, dstrect;
     SDL_Surface *toblit;

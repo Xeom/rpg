@@ -1,6 +1,8 @@
 #if ! defined(COLOUR_H)
 # define COLOUR_H
 
+# include <SDL2/SDL.h>
+
 # define col_set(c, rv, gv, bv)                        \
     do                                                 \
     {                                                  \
@@ -27,4 +29,4 @@ col_hsl colour_to_hsl(col_rgb rgb);
 
 col_rgb colour_to_rgb(col_hsl hsl);
 
-#endif
+#endif /* COLOUR_H */

@@ -1,13 +1,9 @@
-
-typedef enum
-{
-    border_top = 1,
-    border_bottom = 2,
-    border_left = 4,
-    border_right = 8
-} border_edge;
+#if ! defined(BORDER_H)
+# define BORDER_H
 
 typedef struct border_s border;
+
+# include "textbox.h"
 
 struct border_s
 {
@@ -33,4 +29,6 @@ int border_init(border *b, const char *filename);
 
 void border_kill(border *b);
 
-void border_draw(border *b, SDL_Surface *s, SDL_Rect *r, border_edge edges);
+void border_draw(border *b, SDL_Surface *s, SDL_Rect *r, textbox_attrs edges);
+
+#endif /* BORDER_H */
