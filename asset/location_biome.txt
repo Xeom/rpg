@@ -1,0 +1,31 @@
+DESERT
+	temp
+		800 1000
+
+MOUNTAIN
+	elev
+		600 1000
+
+HIGHLAND
+	elev
+		400 600
+
+PLAINS
+	elev
+		2 200
+	temp
+		200 800
+
+BEACH
+	elev
+		1 2
+
+OCEAN
+	elev
+		0 1
+
+FOREST
+	elev
+		2 200
+	temp
+		200 500

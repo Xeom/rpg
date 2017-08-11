@@ -1,0 +1,55 @@
+DESERT
+	sea of sand
+	mesa
+	desert
+	sandy expanse
+	sands
+
+MOUNTAIN
+	mountain
+	peaks
+
+HIGHLAND
+	highlands
+	hills
+
+PLAINS
+	grassland
+	plains
+	shrubland
+
+FOREST
+	wood
+	forest
+
+BEACH
+	beach
+
+OCEAN
+	sea
+	ocean
+
+MAGIC
+	enchanted
+	magical
+	sparking
+
+LARGE
+	great
+	endless
+	expansive
+	boundless
+
+HOT
+	scorching
+	burning
+	boiling
+	firey
+
+COLD
+	freezing
+	frozen
+	snowy
+	icy
+	frigid
+	frosty
