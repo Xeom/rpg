@@ -11,7 +11,7 @@ float textbox_line_spacing = 1;
 int textbox_vert_margin = 16;
 int textbox_hori_margin = 16;
 
-static SDL_Surface *textbox_draw_line(textbox *t, int lineno);
+static SDL_Surface *textbox_draw_line(textbox *t, size_t lineno);
 static SDL_Surface *textbox_draw_seg(
     char **text, col_rgb col, text_attrs attrs, TTF_Font *f
 );
@@ -21,22 +21,57 @@ static void textbox_process_text_escapes(
 static SDL_Surface *textbox_join_surf_horiz(SDL_Surface *l, SDL_Surface *r);
 
 int textbox_init(
-    textbox *t, border *b, TTF_Font *font, SDL_Surface *surf, SDL_Rect *area
+    textbox *t,
+    border *b,
+    TTF_Font *font,
+    SDL_Surface *surf,
+    textbox_attrs attrs
 )
 {
+    SDL_Rect area;
+
+    t->numlines = 0;
+    t->attrs = attrs;
     t->font = font;
     t->surf = surf;
     t->bord = b;
     t->scroll = 0;
 
-    textbox_resize(t, area);
+    area.x = 0;
+    area.y = 0;
+    area.w = surf->w;
+    area.h = surf->h;
+
+    t->text = NULL;
+    t->bordrndr = NULL;
+
+    textbox_resize(t, &area);
 
     return 0;
+}
+
+void textbox_kill(textbox *t)
+{
+    size_t i;
+
+    SDL_FreeSurface(t->bordrndr);
+
+    t->bordrndr = NULL;
+
+    for (i = 0; i < t->numlines; i++)
+    {
+        free(t->text[i]);
+    }
+
+    free(t->text);
+
+    t->text = NULL;
 }
 
 void textbox_resize(textbox *t, SDL_Rect *newsize)
 {
     float lnspacing;
+
     memcpy(&(t->area), newsize, sizeof(SDL_Rect));
 
     lnspacing = (float)TTF_FontHeight(t->font) * textbox_line_spacing;
@@ -52,32 +87,48 @@ void textbox_resize(textbox *t, SDL_Rect *newsize)
         t->textarea.h = max(0, t->area.h - textbox_vert_margin * 2);
     }
 
-    t->vislines = max(1, t->textarea.h / t->lnspacing);
+    t->vislines = (size_t)max(1, t->textarea.h / t->lnspacing);
 }
 
 void textbox_draw(textbox *t)
 {
-    int linepos;
+    size_t linepos;
 
     if ( ! (t->attrs & no_border) )
-        border_draw(t->bord, t->surf, &(t->area), t->attrs);
+    {
+        if (t->bordrndr == NULL)
+        {
+            t->bordrndr = surface_default(t->area.w, t->area.h);
+            border_draw(t->bord, t->bordrndr, NULL, t->attrs);
+        }
+
+        SDL_BlitSurface(t->bordrndr, NULL, t->surf, &(t->area));
+    }
 
     for (linepos = 0; linepos < t->vislines; linepos++)
     {
         SDL_Rect linearea, dstrect;
         SDL_Surface *line;
 
-        dstrect.x = t->textarea.x;
-        dstrect.y = t->textarea.y + linepos * t->lnspacing;
-
         if (linepos + t->scroll >= t->numlines) break;
 
         line = textbox_draw_line(t, linepos + t->scroll);
+
+        if (!line) continue;
 
         linearea.x = 0;
         linearea.y = 0;
         linearea.w = min(t->textarea.w, line->w);
         linearea.h = line->h;
+
+        dstrect.y = t->textarea.y + (int)linepos * t->lnspacing;
+
+        if (t->attrs & l_justify)
+            dstrect.x = t->textarea.x;
+        else if (t->attrs & r_justify)
+            dstrect.x = t->textarea.x + t->textarea.w - linearea.w;
+        else
+            dstrect.x = t->textarea.x + t->textarea.w / 2 - linearea.w / 2;
 
         SDL_BlitSurface(line, &linearea, t->surf, &dstrect);
 
@@ -103,7 +154,10 @@ static void textbox_process_text_escapes(
         if (!str_check_len(*text, 8))
             *text = NULL;
         else
+        {
             sscanf(*text, "\\c%2hhx%2hhx%2hhx", &(col->r), &(col->g), &(col->b));
+            *text += 8;
+        }
         break;
     }
 }
@@ -116,11 +170,13 @@ static SDL_Surface *textbox_draw_seg(
     char *nextseg;
 
     nextseg = strchr(*text, '\\');
-
     if (nextseg) *nextseg = '\0';
-    rtn = TTF_RenderUTF8_Blended(f, *text, colour_to_sdl(col));
-    if (nextseg) *nextseg = '\\';
 
+    rtn = TTF_RenderUTF8_Solid(
+        f, *text, colour_to_sdl(col)
+    );
+
+    if (nextseg) *nextseg = '\\';
     *text = nextseg;
 
     return rtn;
@@ -149,11 +205,16 @@ static SDL_Surface *textbox_join_surf_horiz(SDL_Surface *l, SDL_Surface *r)
     return rtn;
 }
 
-static SDL_Surface *textbox_draw_line(textbox *t, int lineno)
+static SDL_Surface *textbox_draw_line(textbox *t, size_t lineno)
 {
     char *text;
     SDL_Surface *rtn, *seg;
     col_rgb col;
+
+    if (lineno >= t->numlines)
+        return NULL;
+
+    text = t->text[lineno];
 
     rtn = NULL;
 
@@ -175,6 +236,48 @@ static SDL_Surface *textbox_draw_line(textbox *t, int lineno)
     }
 
     return rtn;
+}
+
+void textbox_add_line(textbox *t, size_t lineno)
+{
+    char **split;
+
+    t->text = realloc(t->text, sizeof(char *) * (t->numlines + 1));
+
+    if (t->numlines && lineno < t->numlines)
+    {
+        split = t->text + lineno;
+        memmove(split + 1, split, (t->numlines - lineno) * sizeof(char *));
+    }
+
+    t->numlines += 1;
+    t->text[lineno] = NULL;
+}
+
+void textbox_del_line(textbox *t, size_t lineno)
+{
+    char **split;
+
+    if (t->numlines && lineno < t->numlines - 1)
+    {
+        split = t->text + lineno + 1;
+        memmove(split - 1, split, (t->numlines - lineno - 1) * sizeof(char *));
+    }
+
+    if (t->numlines > 1)
+        t->text = realloc(t->text, sizeof(char *) * (t->numlines - 1));
+
+    t->numlines -= 1;
+}
+
+void textbox_set_line(textbox *t, size_t lineno, char *text)
+{
+    char *dup;
+
+    dup = malloc(strlen(text) + 1);
+    strcpy(dup, text);
+
+    t->text[lineno] = dup;
 }
 /*
 static SDL_Surface *textbox_draw_line(textbox *t, int lineno)
